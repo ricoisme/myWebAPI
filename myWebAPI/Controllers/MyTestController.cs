@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Threading.Tasks;
 
 namespace myWebAPI.Controllers
@@ -10,6 +9,7 @@ namespace myWebAPI.Controllers
     public sealed class MyTestController : ControllerBase
     {
         private readonly ICityNameService _cityNameService;
+
         public MyTestController(ICityNameService cityNameService)
         {
             _cityNameService = cityNameService;
@@ -17,7 +17,7 @@ namespace myWebAPI.Controllers
         [HttpPut("myupdate")]
         public async Task<ApiResponse> Update(UpdateRequest updateRequest)
         {
-            await _cityNameService.UpdateAsync(new CityName { Id = updateRequest.Id, Name = updateRequest.Name });
+            await _cityNameService.UpdateAsync(new CityName { Id = updateRequest.Id, CName = updateRequest.Name });
             var res = new ApiResponse()
             {
                 StatusCode = "200",
@@ -50,9 +50,10 @@ namespace myWebAPI.Controllers
             return await Task.FromResult(res);
         }
 
+        [HttpPost("mycreate")]
         public async Task<ApiResponse> Create(UpdateRequest request)
         {
-            await _cityNameService.AddAsync(new CityName { Id = request.Id, Name = request.Name });
+            await _cityNameService.AddAsync(new CityName { Id = request.Id, CName = request.Name });
             var res = new ApiResponse()
             {
                 Error = "",
@@ -73,137 +74,59 @@ namespace myWebAPI.Controllers
 
     public class CityNameService : ICityNameService
     {
-        private readonly string _connectionString;
-        public CityNameService(string connectionString)
+        private readonly IBaseDao _baseDao;
+        public CityNameService(IBaseDao baseDao)
         {
-            _connectionString = connectionString;
+            _baseDao = baseDao;
         }
         async Task ICityNameService.AddAsync(CityName cityName)
         {
             string sql = "insert into dbo.cityname values(@id,@name)";
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
+            var paras = new Dictionary<string, object>()
                 {
-                    using (SqlCommand cmd = new SqlCommand(sql, conn))
-                    {
-                        cmd.Parameters.Add(
-                            new SqlParameter
-                            { DbType = System.Data.DbType.Int32, ParameterName = "@id", Value = cityName.Id });
-                        cmd.Parameters.Add(
-                            new SqlParameter { DbType = System.Data.DbType.AnsiString, ParameterName = "@name", Value = cityName.Name }
-                            );
-                        if (conn.State == System.Data.ConnectionState.Closed)
-                        {
-                            await conn.OpenAsync();
-                        }
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-                }
-            }
-            catch
-            {
-                throw;
-            }
+                    {"id", cityName.Id },
+                    {"name",cityName.CName }
+                };
+            await _baseDao.ExecuteAsync(sql, paras);
         }
 
         async Task ICityNameService.DeleteAsync(int id)
         {
             string sql = "delete dbo.cityname where id=@id";
-            using (SqlConnection conn = new SqlConnection(_connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
+            var paras = new Dictionary<string, object>()
                 {
-                    cmd.Parameters.Add(
-                        new SqlParameter
-                        {
-                            ParameterName = "@id",
-                            Value = id,
-                            DbType = System.Data.DbType.Int32
-                        }
-                        );
-                    if (conn.State == System.Data.ConnectionState.Closed)
-                    {
-                        await conn.OpenAsync();
-                    }
-                    await cmd.ExecuteNonQueryAsync();
-                }
-            }
+                    {"id", id }
+                };
+            await _baseDao.ExecuteAsync(sql, paras);
         }
 
         async Task<IEnumerable<CityName>> ICityNameService.SelectAsync(string name)
         {
             var result = new List<CityName>();
             string sql = "select id,CName from dbo.cityname where CName=@name";
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            var paras = new Dictionary<string, object>()
             {
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
-                {
-                    cmd.Parameters.Add(new SqlParameter
-                    {
-                        ParameterName = "@name",
-                        Value = name,
-                        DbType = System.Data.DbType.AnsiString,
-                        Size = 30
-                    });
-                    if (conn.State == System.Data.ConnectionState.Closed)
-                    {
-                        await conn.OpenAsync();
-                    }
-                    using (SqlDataReader dr = await cmd.ExecuteReaderAsync())
-                    {
-                        while (dr.Read())
-                        {
-                            result.Add
-                                (
-                                new CityName
-                                {
-                                    Id = (int)dr["Id"],
-                                    Name = dr["CName"].ToString()
-                                }
-                                );
-                            //yield return new CityName { Id = (int)dr["Id"], Name = dr["CName"].ToString() };
-                        }
-                    }
-                    return result;
-                }
-            }
+                { "name",name}
+            };
+            return await _baseDao.Query<CityName>(sql, paras);
         }
 
         async Task ICityNameService.UpdateAsync(CityName cityName)
         {
             string sql = "update dbo.cityname set CName=@name where id=@id";
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            var paras = new Dictionary<string, object>()
             {
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
-                {
-                    cmd.Parameters.Add(new SqlParameter
-                    {
-                        ParameterName = "@id",
-                        Value = cityName.Id,
-                        DbType = System.Data.DbType.Int32
-                    });
-                    cmd.Parameters.Add(new SqlParameter
-                    {
-                        ParameterName = "@name",
-                        Value = cityName.Name,
-                        DbType = System.Data.DbType.AnsiString,
-                        Size = 30
-                    });
-                    if (conn.State == System.Data.ConnectionState.Closed)
-                    {
-                        await conn.OpenAsync();
-                    }
-                    await cmd.ExecuteNonQueryAsync();
-                }
-            }
+                { "id",cityName.Id},
+                { "name",cityName.CName}
+            };
+            await _baseDao.ExecuteAsync(sql, paras);
         }
     }
 
     public class CityName
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string CName { get; set; }
     }
 
     public class ApiResponse

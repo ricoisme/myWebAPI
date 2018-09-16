@@ -16,7 +16,7 @@ namespace myWebAPI.EntityConfigurations
                 .HasColumnType("int")
                 .IsRequired();
 
-            builder.Property(a => a.Name)
+            builder.Property(a => a.CName)
                 .HasColumnType("varchar(30)")
                 .IsRequired(false);
         }

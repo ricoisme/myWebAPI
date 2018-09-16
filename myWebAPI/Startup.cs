@@ -20,8 +20,8 @@ namespace myWebAPI
         public void ConfigureServices(IServiceCollection services)
         {
             var connectionString = Configuration.GetConnectionString("Local");
-            services.AddScoped<ICityNameService, CityNameService>(
-                _ => { return new CityNameService(connectionString); });
+            services.AddScoped<IBaseDao, BaseDao>(_ => { return new BaseDao(connectionString); });
+            services.AddScoped<ICityNameService, CityNameService>();
             services.AddMvcCore();
             services.AddLogging();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
