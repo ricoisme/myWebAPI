@@ -106,7 +106,7 @@ namespace myWebAPI
 
         }
 
-        static IList<T> ConvertTo<T>(IList<DataRow> rows)
+        private IList<T> ConvertTo<T>(IList<DataRow> rows)
         {
             IList<T> list = null;
 
@@ -124,7 +124,7 @@ namespace myWebAPI
             return list;
         }
 
-        static T CreateItem<T>(DataRow row)
+        private T CreateItem<T>(DataRow row)
         {
             T obj = default(T);
             if (row != null)
