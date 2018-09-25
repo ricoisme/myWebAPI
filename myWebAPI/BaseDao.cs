@@ -126,7 +126,7 @@ namespace myWebAPI
 
         private T CreateItem<T>(DataRow row)
         {
-            T obj = default(T);
+            T obj = default;
             if (row != null)
             {
                 obj = Activator.CreateInstance<T>();
