@@ -22,7 +22,7 @@ namespace myWebAPI
             SqlConnection = _sqlConnection;
         }
 
-        public async Task<IEnumerable<T>> Query<T>(string sqlstatement, Dictionary<string, object> paras)
+        public Task<IEnumerable<T>> Query<T>(string sqlstatement, Dictionary<string, object> paras)
         {
             try
             {
@@ -42,13 +42,13 @@ namespace myWebAPI
                         }
                         if (_sqlConnection.State == ConnectionState.Closed)
                         {
-                            await _sqlConnection.OpenAsync();
+                            _sqlConnection.OpenAsync();
                         }
                         using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                         {
                             var dt = new DataTable();
                             da.Fill(dt);
-                            return ConvertTo<T>(dt);
+                            return (Task<IEnumerable<T>>)ConvertTo<T>(dt);
                         }
                     }
                 }
@@ -57,7 +57,7 @@ namespace myWebAPI
             { throw; }
         }
 
-        public async Task ExecuteAsync(string sqlstatement, Dictionary<string, object> paras)
+        public Task ExecuteAsync(string sqlstatement, Dictionary<string, object> paras)
         {
             try
             {
@@ -77,9 +77,9 @@ namespace myWebAPI
                         }
                         if (_sqlConnection.State == ConnectionState.Closed)
                         {
-                            await _sqlConnection.OpenAsync();
+                            _sqlConnection.OpenAsync();
                         }
-                        await cmd.ExecuteNonQueryAsync();
+                        return cmd.ExecuteNonQueryAsync();
                     }
                 }
             }
